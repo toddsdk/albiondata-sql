@@ -119,7 +119,7 @@ func updateOrCreateOrder(db *gorm.DB, io *adclib.MarketOrder) error {
 }
 
 func doCmd(cmd *cobra.Command, args []string) {
-	fmt.Printf("Connecting to database: %s", viper.GetString("dbType"))
+	fmt.Printf("Connecting to database: %s\n", viper.GetString("dbType"))
 	db, err := gorm.Open(viper.GetString("dbType"), viper.GetString("dbURI"))
 	if err != nil {
 		fmt.Printf("%v\n", err)

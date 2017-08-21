@@ -5,13 +5,13 @@ import (
 )
 
 type ModelMarketOrder struct {
-	ID               uint `gorm:"primary_key"`
-	ItemID           string
-	QualityLevel     int8 `gorm:"size:1"`
-	EnchantmentLevel int8 `gorm:"size:1"`
-	Price            int
+	ID               uint   `gorm:"primary_key"`
+	ItemID           string `gorm:"index"`
+	QualityLevel     int8   `gorm:"size:1"`
+	EnchantmentLevel int8   `gorm:"size:1"`
+	Price            int    `gorm:"index"`
 	Amount           int
-	AuctionType      string
+	AuctionType      string `gorm:"index"`
 	Expires          time.Time
 	CreatedAt        time.Time
 	UpdatedAt        time.Time
