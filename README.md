@@ -7,7 +7,7 @@ and pushes them to NATS, albiondata-sql dumps those from NATS to your SQL Databa
 
 ## Usage
 
-Thanks to [viper](https://github.com/spf13/viper) and [cobra](https://github.com/spf13/cobra) you have 3 ways to configure albiondata-client.
+Thanks to [viper](https://github.com/spf13/viper) and [cobra](https://github.com/spf13/cobra) you have 3 ways to configure albiondata-sql.
 
 ### 1.) Traditional by configfile 
 

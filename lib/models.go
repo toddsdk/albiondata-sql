@@ -20,12 +20,12 @@ type ModelMarketOrder struct {
 	Location Location `gorm:"-"`
 }
 
-func (m *ModelMarketOrder) TableName() string {
+func (m ModelMarketOrder) TableName() string {
 	return m.Location.TableName()
 }
 
-func NewModelMarketOrder(location Location) *ModelMarketOrder {
-	return &ModelMarketOrder{
+func NewModelMarketOrder(location Location) ModelMarketOrder {
+	return ModelMarketOrder{
 		Location: location,
 	}
 }

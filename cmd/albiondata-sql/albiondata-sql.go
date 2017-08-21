@@ -83,8 +83,11 @@ func updateOrCreateOrder(db *gorm.DB, io *adclib.MarketOrder) error {
 	}
 	mo := location.Model()
 
-	if err := db.First(mo, io.ID).Error; err != nil {
+	// fmt.Printf("Importing: %s\n", io.ItemID)
+
+	if err := db.First(&mo, io.ID).Error; err != nil {
 		// Not found
+		mo = location.Model()
 		mo.ID = uint(io.ID)
 		mo.ItemID = io.ItemID
 		mo.QualityLevel = int8(io.QualityLevel)
@@ -105,12 +108,16 @@ func updateOrCreateOrder(db *gorm.DB, io *adclib.MarketOrder) error {
 		}
 		mo.Expires = t
 
-		if err := db.Save(mo).Error; err != nil {
+		// fmt.Printf("%s: Creating %s\n", mo.Location.String(), mo.ItemID)
+		mo.Location = location
+		if err := db.Create(&mo).Error; err != nil {
 			return err
 		}
 	} else {
 		// Found, set updatedAt
-		if err := db.Save(mo).Error; err != nil {
+		// fmt.Printf("%s: Updateing %s\n", mo.Location.String(), mo.ItemID)
+		mo.Location = location
+		if err := db.Update(&mo).Error; err != nil {
 			return err
 		}
 	}
@@ -130,7 +137,7 @@ func doCmd(cmd *cobra.Command, args []string) {
 	if viper.GetString("dbType") == "mysql" {
 		for _, l := range lib.Locations() {
 			model := l.Model()
-			err := db.Set("gorm:table_options", "ENGINE=InnoDB").AutoMigrate(model).Error
+			err := db.Set("gorm:table_options", "ENGINE=InnoDB").AutoMigrate(&model).Error
 			if err != nil {
 				fmt.Printf("%v\n", err)
 				return
@@ -139,7 +146,7 @@ func doCmd(cmd *cobra.Command, args []string) {
 	} else {
 		for _, l := range lib.Locations() {
 			model := l.Model()
-			if err := db.AutoMigrate(model).Error; err != nil {
+			if err := db.AutoMigrate(&model).Error; err != nil {
 				fmt.Printf("%v\n", err)
 				return
 			}
@@ -163,15 +170,16 @@ func doCmd(cmd *cobra.Command, args []string) {
 			order := &adclib.MarketOrder{}
 			err := json.Unmarshal(msg.Data, order)
 			if err != nil {
-				fmt.Printf("%v\n", err)
+				fmt.Printf("ERROR: %v\n", err)
 				continue
 			}
 
-			err = updateOrCreateOrder(db, order)
-			if err != nil {
-				fmt.Printf("%v\n", err)
-				continue
-			}
+			go func() {
+				err = updateOrCreateOrder(db, order)
+				if err != nil {
+					fmt.Printf("ERROR: %s\n", err)
+				}
+			}()
 		}
 	}
 }

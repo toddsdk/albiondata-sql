@@ -67,7 +67,7 @@ func (l Location) String() string {
 	}
 }
 
-func (l Location) Model() *ModelMarketOrder {
+func (l Location) Model() ModelMarketOrder {
 	return NewModelMarketOrder(l)
 }
 

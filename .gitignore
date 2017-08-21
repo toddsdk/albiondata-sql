@@ -1,5 +1,5 @@
 .vscode/
 vendor/
 
-albiondata-sql
-albiondata-sql.yaml
+./albiondata-sql
+./albiondata-sql.yaml
