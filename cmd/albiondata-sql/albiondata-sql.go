@@ -109,15 +109,13 @@ func updateOrCreateOrder(db *gorm.DB, io *adclib.MarketOrder) error {
 		mo.Expires = t
 
 		// fmt.Printf("%s: Creating %s\n", mo.Location.String(), mo.ItemID)
-		mo.Location = location
 		if err := db.Create(&mo).Error; err != nil {
 			return err
 		}
 	} else {
 		// Found, set updatedAt
 		// fmt.Printf("%s: Updateing %s\n", mo.Location.String(), mo.ItemID)
-		mo.Location = location
-		if err := db.Update(&mo).Error; err != nil {
+		if err := db.Save(&mo).Error; err != nil {
 			return err
 		}
 	}
