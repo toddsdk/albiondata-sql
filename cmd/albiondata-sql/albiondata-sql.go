@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/jinzhu/gorm"
+	_ "github.com/jinzhu/gorm/dialects/mssql"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
@@ -29,7 +30,7 @@ var (
 var rootCmd = &cobra.Command{
 	Use:   "albiondata-sql",
 	Short: "albiondata-sql is a NATS to SQL Bridge for the Albion Data Project",
-	Long: `Reads data from NATS and pushes it to a SQL Database (MySQL, PostgreSQL and SQLite3 are supported), 
+	Long: `Reads data from NATS and pushes it to a SQL Database (MSSQL, MySQL, PostgreSQL and SQLite3 are supported), 
 creates one table per Market`,
 	Run: doCmd,
 }
@@ -37,7 +38,7 @@ creates one table per Market`,
 func init() {
 	cobra.OnInitialize(initConfig)
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.albiondata-sql.yaml")
-	rootCmd.PersistentFlags().StringP("dbType", "t", "mysql", "Database type must be one of mysql, postgresql, sqlite3")
+	rootCmd.PersistentFlags().StringP("dbType", "t", "mysql", "Database type must be one of mssql, mysql, postgresql, sqlite3")
 	rootCmd.PersistentFlags().StringP("dbURI", "u", "", "Databse URI to connect to, see: http://jinzhu.me/gorm/database.html#connecting-to-a-database")
 	rootCmd.PersistentFlags().StringP("natsURL", "n", "nats://public:notsecure@ingest.albion-data.com:4222", "NATS to connect to")
 	viper.BindPFlag("dbType", rootCmd.PersistentFlags().Lookup("dbType"))
