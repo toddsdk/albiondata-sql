@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -65,8 +66,13 @@ func initConfig() {
 		viper.AddConfigPath(home)
 		viper.SetConfigName("albiondata-sql")
 
-		wd, _ := os.Getwd()
-		viper.AddConfigPath(wd)
+		// Add the executable path as
+		ex, err := os.Executable()
+		if err != nil {
+			panic(err)
+		}
+		exPath := filepath.Dir(ex)
+		viper.AddConfigPath(exPath)
 	}
 
 	if err := viper.ReadInConfig(); err != nil {
