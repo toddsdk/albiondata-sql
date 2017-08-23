@@ -88,14 +88,15 @@ func updateOrCreateOrder(db *gorm.DB, io *adclib.MarketOrder) error {
 	if err != nil {
 		return err
 	}
-	mo := location.Model()
+	mo := lib.NewModelMarketOrder()
 
 	// fmt.Printf("Importing: %s\n", io.ItemID)
 
-	if err := db.First(&mo, io.ID).Error; err != nil {
+	if err := db.Where("albion_id = ?", io.ID).First(&mo).Error; err != nil {
 		// Not found
-		mo = location.Model()
-		mo.ID = uint(io.ID)
+		mo = lib.NewModelMarketOrder()
+		mo.Location = location
+		mo.AlbionID = uint(io.ID)
 		mo.ItemID = io.ItemID
 		mo.QualityLevel = int8(io.QualityLevel)
 		mo.EnchantmentLevel = int8(io.EnchantmentLevel)
@@ -107,6 +108,7 @@ func updateOrCreateOrder(db *gorm.DB, io *adclib.MarketOrder) error {
 		} else {
 			mo.Price = 0
 		}
+		mo.InitialAmount = io.Amount
 		mo.Amount = io.Amount
 		mo.AuctionType = io.AuctionType
 		t, err := time.Parse(time.RFC3339, io.Expires+"+00:00")
@@ -122,6 +124,7 @@ func updateOrCreateOrder(db *gorm.DB, io *adclib.MarketOrder) error {
 	} else {
 		// Found, set updatedAt
 		// fmt.Printf("%s: Updateing %s\n", mo.Location.String(), mo.ItemID)
+		mo.Amount = io.Amount
 		if err := db.Save(&mo).Error; err != nil {
 			return err
 		}
@@ -140,21 +143,17 @@ func doCmd(cmd *cobra.Command, args []string) {
 	defer db.Close()
 
 	if viper.GetString("dbType") == "mysql" {
-		for _, l := range lib.Locations() {
-			model := l.Model()
-			err := db.Set("gorm:table_options", "ENGINE=InnoDB").AutoMigrate(&model).Error
-			if err != nil {
-				fmt.Printf("%v\n", err)
-				return
-			}
+		model := lib.NewModelMarketOrder()
+		err := db.Set("gorm:table_options", "ENGINE=InnoDB").AutoMigrate(&model).Error
+		if err != nil {
+			fmt.Printf("%v\n", err)
+			return
 		}
 	} else {
-		for _, l := range lib.Locations() {
-			model := l.Model()
-			if err := db.AutoMigrate(&model).Error; err != nil {
-				fmt.Printf("%v\n", err)
-				return
-			}
+		model := lib.NewModelMarketOrder()
+		if err := db.AutoMigrate(&model).Error; err != nil {
+			fmt.Printf("%v\n", err)
+			return
 		}
 	}
 

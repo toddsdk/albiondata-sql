@@ -27,26 +27,6 @@ func Locations() []Location {
 	}
 }
 
-func (l Location) TableName() string {
-	switch int(l) {
-	case int(ThetfordMarket):
-		return "thetford_market_orders"
-	case int(LymhurstMarket):
-		return "lymhurst_market_orders"
-	case int(BridgewatchMarket):
-		return "bridgewatch_market_orders"
-	case int(CaerleonMarket):
-		return "caerleon_market_orders"
-	case int(MartlockMarket):
-		return "martlock_market_orders"
-	case int(FortSterlingMarket):
-		return "fort_sterling_market_orders"
-	default:
-		// Will never happen
-		return ""
-	}
-}
-
 func (l Location) String() string {
 	switch int(l) {
 	case int(ThetfordMarket):
@@ -65,10 +45,6 @@ func (l Location) String() string {
 		// Will never happen
 		return ""
 	}
-}
-
-func (l Location) Model() ModelMarketOrder {
-	return NewModelMarketOrder(l)
 }
 
 func NewLocationFromId(locationID int) (Location, error) {

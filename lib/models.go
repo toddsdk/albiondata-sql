@@ -2,30 +2,29 @@ package lib
 
 import (
 	"time"
+
+	"github.com/jinzhu/gorm"
 )
 
 type ModelMarketOrder struct {
-	ID               uint   `gorm:"primary_key"`
+	AlbionID         uint   `gorm:"not null;unique_index:idx_id_location"`
 	ItemID           string `gorm:"index"`
 	QualityLevel     int8   `gorm:"size:1"`
 	EnchantmentLevel int8   `gorm:"size:1"`
 	Price            int    `gorm:"index"`
+	InitialAmount    int
 	Amount           int
 	AuctionType      string `gorm:"index"`
 	Expires          time.Time
-	CreatedAt        time.Time
-	UpdatedAt        time.Time
-	DeletedAt        *time.Time
-
-	Location Location `gorm:"-"`
+	Location         Location `gorm:"not null;unique_index:idx_id_location;index"`
+	ExpiredAt        *time.Time
+	gorm.Model
 }
 
 func (m ModelMarketOrder) TableName() string {
-	return m.Location.TableName()
+	return "market_orders"
 }
 
-func NewModelMarketOrder(location Location) ModelMarketOrder {
-	return ModelMarketOrder{
-		Location: location,
-	}
+func NewModelMarketOrder() ModelMarketOrder {
+	return ModelMarketOrder{}
 }
