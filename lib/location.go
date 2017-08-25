@@ -14,6 +14,18 @@ const (
 	CaerleonMarket     Location = 3005
 	MartlockMarket     Location = 3010
 	FortSterlingMarket Location = 4002
+
+	SwampCrossMarket    Location = 4
+	ForestCrossMarket   Location = 1006
+	SteppeCrossMarket   Location = 2002
+	HighlandCrossMarket Location = 3002
+	MountainCrossMarket Location = 4006
+
+	// SwampOutpostMarket Location = 0004#1
+	// ForestOutpostMarket Location = 1006#1
+	// SteppeOutpostMarket Location = 2002#1
+	// HighlandOutpostMarket Location = 3002#1
+	// MountainOutpostMarket Location = 4006#1
 )
 
 func Locations() []Location {
