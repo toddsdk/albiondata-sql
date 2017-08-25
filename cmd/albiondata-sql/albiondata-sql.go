@@ -42,9 +42,14 @@ func init() {
 	rootCmd.PersistentFlags().StringP("dbType", "t", "mysql", "Database type must be one of mssql, mysql, postgresql, sqlite3")
 	rootCmd.PersistentFlags().StringP("dbURI", "u", "", "Databse URI to connect to, see: http://jinzhu.me/gorm/database.html#connecting-to-a-database")
 	rootCmd.PersistentFlags().StringP("natsURL", "n", "nats://public:notsecure@ingest.albion-data.com:4222", "NATS to connect to")
+	rootCmd.PersistentFlags().Int64P("expireCheckEvery", "e", 3600, "every x seconds the db entries get checked if an order is expired" )
+	rootCmd.PersistentFlags().Int64P("expireNotUpdFor", "s", 86400, "expires oder if it was not updated for x seconds. Default 1 Day" )
+
 	viper.BindPFlag("dbType", rootCmd.PersistentFlags().Lookup("dbType"))
 	viper.BindPFlag("dbURI", rootCmd.PersistentFlags().Lookup("dbURI"))
 	viper.BindPFlag("natsURL", rootCmd.PersistentFlags().Lookup("natsURL"))
+	viper.BindPFlag("expireCheckEvery", rootCmd.PersistentFlags().Lookup("expireCheckEvery"))
+	viper.BindPFlag("expireNotUpdFor", rootCmd.PersistentFlags().Lookup("expireNotUpdFor"))
 }
 
 func initConfig() {
@@ -92,7 +97,7 @@ func updateOrCreateOrder(db *gorm.DB, io *adclib.MarketOrder) error {
 
 	// fmt.Printf("Importing: %s\n", io.ItemID)
 
-	if err := db.Where("albion_id = ?", io.ID).First(&mo).Error; err != nil {
+	if err := db.Unscoped().Where("albion_id = ?", io.ID).First(&mo).Error; err != nil {
 		// Not found
 		mo = lib.NewModelMarketOrder()
 		mo.Location = location
@@ -125,12 +130,28 @@ func updateOrCreateOrder(db *gorm.DB, io *adclib.MarketOrder) error {
 		// Found, set updatedAt
 		// fmt.Printf("%s: Updateing %s\n", mo.Location.String(), mo.ItemID)
 		mo.Amount = io.Amount
+		mo.DeletedAt = nil
 		if err := db.Save(&mo).Error; err != nil {
 			return err
 		}
 	}
 
 	return nil
+}
+
+func expireOrders(db *gorm.DB) {
+	checkEvery := viper.GetInt64("expireCheckEvery")
+	expNotUpdFor := -viper.GetInt64("expireNotUpdFor")
+
+	for {
+		now := time.Now()
+		nowE := now.Add(time.Duration(expNotUpdFor)* time.Second)
+		if err := db.Table(lib.NewModelMarketOrder().TableName()).Where("expires <= ? or updated_at <= ?", now, nowE).Update(map[string]interface{}{"deleted_at": now}).Error; err != nil {
+			fmt.Printf("ERROR: %v\n", err)
+		}
+
+		time.Sleep(time.Second * time.Duration(checkEvery))
+	}
 }
 
 func doCmd(cmd *cobra.Command, args []string) {
@@ -167,6 +188,10 @@ func doCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 	defer marketSub.Unsubscribe()
+
+	if viper.GetInt64("expireCheckEvery") > 0 {
+		go expireOrders(db)
+	}
 
 	for {
 		select {

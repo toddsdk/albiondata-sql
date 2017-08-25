@@ -4,3 +4,7 @@ dbType: mysql
 dbURI: 
 # Default or your NATS
 natsURL: nats://public:notsecure@ingest.albion-data.com:4222
+# Every 3600 seconds (1 hour) trigger the expire check, if 0 it's disabled
+expireCheckEvery: 3600
+# Expire entries if they weren't updated for 86400 (1 Day)
+expireNotUpdFor: 86400
