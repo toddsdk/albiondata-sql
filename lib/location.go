@@ -53,6 +53,16 @@ func (l Location) String() string {
 		return "Martlock Market"
 	case int(FortSterlingMarket):
 		return "Fort Sterling Market"
+	case int(SwampCrossMarket):
+		return "Swamp Cross Market"
+	case int(ForestCrossMarket):
+		return "Forest Cross Market"
+	case int(SteppeCrossMarket):
+		return "Steppe Cross Market"
+	case int(HighlandCrossMarket):
+		return "Highland Cross Market"
+	case int(MountainCrossMarket):
+		return "Mountain Cross Market"
 	default:
 		// Will never happen
 		return ""
@@ -73,6 +83,16 @@ func NewLocationFromId(locationID int) (Location, error) {
 		return MartlockMarket, nil
 	case int(FortSterlingMarket):
 		return FortSterlingMarket, nil
+	case int(SwampCrossMarket):
+		return SwampCrossMarket, nil
+	case int(ForestCrossMarket):
+		return ForestCrossMarket, nil
+	case int(SteppeCrossMarket):
+		return SteppeCrossMarket, nil
+	case int(HighlandCrossMarket):
+		return HighlandCrossMarket, nil
+	case int(MountainCrossMarket):
+		return MountainCrossMarket, nil
 	default:
 		return Unknown, fmt.Errorf("Unknown location: %d", locationID)
 	}
