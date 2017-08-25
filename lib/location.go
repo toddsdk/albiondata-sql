@@ -36,6 +36,11 @@ func Locations() []Location {
 		CaerleonMarket,
 		MartlockMarket,
 		FortSterlingMarket,
+		SwampCrossMarket,
+		ForestCrossMarket,
+		SteppeCrossMarket,
+		HighlandCrossMarket,
+		MountainCrossMarket,
 	}
 }
 
