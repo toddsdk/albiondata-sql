@@ -17,7 +17,6 @@ type ModelMarketOrder struct {
 	AuctionType      string `gorm:"index"`
 	Expires          time.Time
 	Location         Location `gorm:"not null;unique_index:idx_id_location;index"`
-	ExpiredAt        *time.Time
 	gorm.Model
 }
 
