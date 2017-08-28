@@ -29,13 +29,13 @@ func NewModelMarketOrder() ModelMarketOrder {
 }
 
 type ModelMarketStats struct {
+	ID        int    `gorm:"primary_key"`
 	ItemID    string `gorm:"index"`
 	Location  Location
 	PriceMin  int
 	PriceMax  int
 	PriceAvg  int
 	Timestamp *time.Time
-	gorm.Model
 }
 
 func (m ModelMarketStats) TableName() string {
