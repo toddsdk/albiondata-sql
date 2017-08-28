@@ -34,7 +34,7 @@ type ModelMarketStats struct {
 	Location  Location
 	PriceMin  int
 	PriceMax  int
-	PriceAvg  int
+	PriceAvg  float64
 	Timestamp *time.Time
 }
 
