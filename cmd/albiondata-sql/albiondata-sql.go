@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/jinzhu/gorm"
@@ -42,14 +43,12 @@ func init() {
 	rootCmd.PersistentFlags().StringP("dbType", "t", "mysql", "Database type must be one of mssql, mysql, postgresql, sqlite3")
 	rootCmd.PersistentFlags().StringP("dbURI", "u", "", "Databse URI to connect to, see: http://jinzhu.me/gorm/database.html#connecting-to-a-database")
 	rootCmd.PersistentFlags().StringP("natsURL", "n", "nats://public:notsecure@ingest.albion-data.com:4222", "NATS to connect to")
-	rootCmd.PersistentFlags().Int64P("expireCheckEvery", "e", 3600, "every x seconds the db entries get checked if an order is expired" )
-	rootCmd.PersistentFlags().Int64P("expireNotUpdFor", "s", 86400, "expires oder if it was not updated for x seconds. Default 1 Day" )
+	rootCmd.PersistentFlags().Int64P("expireCheckEvery", "e", 3600, "every x seconds the db entries get checked if an order is expired")
 
 	viper.BindPFlag("dbType", rootCmd.PersistentFlags().Lookup("dbType"))
 	viper.BindPFlag("dbURI", rootCmd.PersistentFlags().Lookup("dbURI"))
 	viper.BindPFlag("natsURL", rootCmd.PersistentFlags().Lookup("natsURL"))
 	viper.BindPFlag("expireCheckEvery", rootCmd.PersistentFlags().Lookup("expireCheckEvery"))
-	viper.BindPFlag("expireNotUpdFor", rootCmd.PersistentFlags().Lookup("expireNotUpdFor"))
 }
 
 func initConfig() {
@@ -141,12 +140,10 @@ func updateOrCreateOrder(db *gorm.DB, io *adclib.MarketOrder) error {
 
 func expireOrders(db *gorm.DB) {
 	checkEvery := viper.GetInt64("expireCheckEvery")
-	expNotUpdFor := -viper.GetInt64("expireNotUpdFor")
 
 	for {
 		now := time.Now()
-		nowE := now.Add(time.Duration(expNotUpdFor)* time.Second)
-		if err := db.Table(lib.NewModelMarketOrder().TableName()).Where("expires <= ? or updated_at <= ?", now, nowE).Update(map[string]interface{}{"deleted_at": now}).Error; err != nil {
+		if err := db.Table(lib.NewModelMarketOrder().TableName()).Where("expires <= ?", now).Update(map[string]interface{}{"deleted_at": now}).Error; err != nil {
 			fmt.Printf("ERROR: %v\n", err)
 		}
 
@@ -155,6 +152,11 @@ func expireOrders(db *gorm.DB) {
 }
 
 func doCmd(cmd *cobra.Command, args []string) {
+	// Fix for MSSQL, see: https://github.com/jinzhu/gorm/issues/941
+	if strings.ToLower(viper.GetString("dbType")) == "mssql" {
+		gorm.DefaultCallback.Create().Remove("mssql:set_identity_insert")
+	}
+
 	fmt.Printf("Connecting to database: %s\n", viper.GetString("dbType"))
 	db, err := gorm.Open(viper.GetString("dbType"), viper.GetString("dbURI"))
 	if err != nil {
