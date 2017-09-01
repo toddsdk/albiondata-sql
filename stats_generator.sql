@@ -14,8 +14,8 @@ CREATE TABLE `market_stats` (
  PRIMARY KEY (`id`),
  UNIQUE KEY `item_id_location_timestamp_unique` (`item_id`,`location`,`timestamp`) USING BTREE,
  KEY `item_id` (`item_id`),
- KEY `location` (`location`),
-) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=latin1
+ KEY `location` (`location`)
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=latin1;
 
 
 DROP PROCEDURE IF EXISTS `execute_stmt`;
@@ -103,8 +103,8 @@ $$
 DELIMITER ;
 
 
-/** PROCEDURE `create_now_stats` creates for stats for the last hour in all locations 
-Call it via cron at the 59th minute of every hour.
+/** PROCEDURE `create_now_stats` creates stats for the last hour in all locations 
+See the event at the end of the file to run it every hour.
 **/
 DROP PROCEDURE IF EXISTS `create_now_stats`; 
 
@@ -144,3 +144,9 @@ END BLOCK1;
 $$
 
 DELIMITER ; 
+
+
+/**
+ * This event creates the statistics every hour
+ */
+CREATE EVENT `create_now_stats` ON SCHEDULE EVERY 59 MINUTE ON COMPLETION NOT PRESERVE ENABLE DO CALL `create_now_stats`();
