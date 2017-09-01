@@ -4,22 +4,18 @@ USE albiondata;
 DROP TABLE IF EXISTS `market_stats`;
 
 CREATE TABLE `market_stats` (
-  `id` int(10) UNSIGNED NOT NULL,
-  `item_id` varchar(255) NOT NULL,
-  `location` int(11) NOT NULL,
-  `price_min` int(11) DEFAULT NULL,
-  `price_max` int(11) DEFAULT NULL,
-  `price_avg` int(11) DEFAULT NULL,
-  `timestamp` timestamp NULL DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-
-ALTER TABLE `market_stats`
-  ADD PRIMARY KEY (`id`);
-
-ALTER TABLE `market_stats`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=195;
-
-ALTER TABLE `market_stats` ADD UNIQUE `item_id_location_timestamp_unique` (`item_id`, `location`, `timestamp`) USING BTREE;
+ `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+ `item_id` varchar(255) NOT NULL,
+ `location` int(11) NOT NULL,
+ `price_min` int(11) DEFAULT NULL,
+ `price_max` int(11) DEFAULT NULL,
+ `price_avg` decimal(10,0) DEFAULT NULL,
+ `timestamp` timestamp NULL DEFAULT NULL,
+ PRIMARY KEY (`id`),
+ UNIQUE KEY `item_id_location_timestamp_unique` (`item_id`,`location`,`timestamp`) USING BTREE,
+ KEY `item_id` (`item_id`),
+ KEY `location` (`location`),
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=latin1
 
 
 DROP PROCEDURE IF EXISTS `execute_stmt`;
@@ -44,9 +40,7 @@ DELIMITER ;
 
 
 
-/** PROCEDURE `create_hour_stats` creates stats in all locations for the given hour
-2017-08-28T19:00:00Z00:00
- **/
+/** PROCEDURE `create_hour_stats` creates stats in all locations for the given hour **/
 DROP PROCEDURE IF EXISTS `create_hour_stats`;
 
 DELIMITER $$
@@ -61,6 +55,7 @@ CREATE PROCEDURE `create_hour_stats`(IN var_timestamp timestamp)
 
         BLOCK2: BEGIN
             DECLARE var_location int;
+            DECLARE var_timestamp_ignored timestamp;
             DECLARE var_item_id VARCHAR(255);
             DECLARE var_price_min int;
             DECLARE var_price_max int;
@@ -81,12 +76,12 @@ CREATE PROCEDURE `create_hour_stats`(IN var_timestamp timestamp)
 
                 BLOCK3: BEGIN
                     DECLARE CONTINUE HANDLER FOR NOT FOUND SET var_price_min = 0;
-                    SELECT `price` FROM `market_orders` WHERE `location` = var_location AND `item_id` = var_item_id AND `auction_type` = 'offer' AND  (`updated_at` >= var_hour_from AND `updated_at` <= var_hour_to) ORDER BY `updated_at`, `price` LIMIT 1 INTO var_price_min;
+                    SELECT `price`, DATE_FORMAT(`updated_at`, '%Y-%m-%d %H:%i') as updated_at_no_seconds FROM `market_orders` WHERE `location` = var_location AND `item_id` = var_item_id AND `auction_type` = 'offer' AND  (`updated_at` >= var_hour_from AND `updated_at` <= var_hour_to) ORDER BY updated_at_no_seconds DESC, `price` ASC LIMIT 1 INTO var_price_min, var_timestamp_ignored;
                 END BLOCK3;
 
                 BLOCK3: BEGIN
                     DECLARE CONTINUE HANDLER FOR NOT FOUND SET var_price_max = 0;
-                    SELECT `price` FROM `market_orders` WHERE `location` = var_location AND `item_id` = var_item_id AND `auction_type` = 'offer' AND (`updated_at` >= var_hour_from AND `updated_at` <= var_hour_to) ORDER BY `updated_at` ASC, `price` DESC LIMIT 1 INTO var_price_max;                    
+                    SELECT `price`, DATE_FORMAT(`updated_at`, '%Y-%m-%d %H:%i') as updated_at_no_seconds FROM `market_orders` WHERE `location` = var_location AND `item_id` = var_item_id AND `auction_type` = 'offer' AND (`updated_at` >= var_hour_from AND `updated_at` <= var_hour_to) ORDER BY updated_at_no_seconds DESC, `price` DESC LIMIT 1 INTO var_price_max, var_timestamp_ignored;
                 END BLOCK3;
 
                 BLOCK3: BEGIN
@@ -108,14 +103,16 @@ $$
 DELIMITER ;
 
 
-/** PROCEDURE `create_now_stats` creates for stats for the last hour in all locations **/
+/** PROCEDURE `create_now_stats` creates for stats for the last hour in all locations 
+Call it via cron at the 59th minute of every hour.
+**/
 DROP PROCEDURE IF EXISTS `create_now_stats`; 
 
 DELIMITER $$
 CREATE PROCEDURE `create_now_stats`() 
 	MODIFIES SQL DATA
     
-    CALL `create_hour_stats`(UNIX_TIMESTAMP());
+    CALL `create_hour_stats`(UTC_TIMESTAMP());
 $$
 
 DELIMITER ;
@@ -130,7 +127,7 @@ CREATE PROCEDURE `create_all_data_stats`()
 BLOCK1: BEGIN
     DECLARE var_timestamp timestamp;
     DECLARE cursor_done boolean;
-    DECLARE cursor_all CURSOR FOR SELECT DISTINCT(DATE_FORMAT(`updated_at`, '%Y-%m-%dT%H:00:00Z00:00')) FROM `market_orders`;
+    DECLARE cursor_all CURSOR FOR SELECT DISTINCT(DATE_FORMAT(`updated_at`, '%Y-%m-%dT%H:00:00Z')) FROM `market_orders`;
     DECLARE CONTINUE HANDLER FOR NOT FOUND SET cursor_done = TRUE;
 
     OPEN cursor_all;
