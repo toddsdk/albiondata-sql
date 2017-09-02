@@ -149,4 +149,8 @@ DELIMITER ;
 /**
  * This event creates the statistics every hour
  */
-CREATE EVENT `create_now_stats` ON SCHEDULE EVERY 59 MINUTE ON COMPLETION NOT PRESERVE ENABLE DO CALL `create_now_stats`();
+DROP EVENT IF EXISTS `create_now_stats`;
+
+SET GLOBAL event_scheduler="ON";
+
+CREATE EVENT `create_now_stats` ON SCHEDULE EVERY 60 MINUTE STARTS (DATE_FORMAT(CURRENT_TIMESTAMP, '%Y-%m-%d %H:59:00')) ON COMPLETION NOT PRESERVE ENABLE DO CALL `create_now_stats`();
