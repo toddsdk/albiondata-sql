@@ -205,12 +205,10 @@ func doCmd(cmd *cobra.Command, args []string) {
 				continue
 			}
 
-			go func() {
-				err = updateOrCreateOrder(db, order)
-				if err != nil {
-					fmt.Printf("ERROR: %s\n", err)
-				}
-			}()
+			err = updateOrCreateOrder(db, order)
+			if err != nil {
+				fmt.Printf("ERROR: %s\n", err)
+			}
 		}
 	}
 }
