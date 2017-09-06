@@ -15,8 +15,8 @@ import (
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
 
+	"github.com/albiondata/albiondata-sql/lib"
 	nats "github.com/nats-io/go-nats"
-	"github.com/pcdummy/albiondata-sql/lib"
 	adclib "github.com/regner/albiondata-client/lib"
 
 	homedir "github.com/mitchellh/go-homedir"
