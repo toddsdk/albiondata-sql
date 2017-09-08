@@ -24,6 +24,8 @@ import (
 	"github.com/spf13/viper"
 )
 
+const secondsFrom0ToUnix = int64(62167132800)
+
 var (
 	version string
 	cfgFile string
@@ -138,6 +140,27 @@ func updateOrCreateOrder(db *gorm.DB, io *adclib.MarketOrder) error {
 	return nil
 }
 
+func createGoldPrices(db *gorm.DB, gps *adclib.GoldPricesUpload) error {
+	for i := range gps.Prices {
+		m := lib.ModelGoldprices{}
+
+		price := gps.Prices[i]
+		time := time.Unix(gps.TimeStamps[i]/int64(10000000)-secondsFrom0ToUnix, 0)
+
+		if err := db.Unscoped().Where("timestamp = ?", time).First(&m).Error; err != nil {
+			// Not found
+			m.Price = int(price / 10000)
+			m.Timestamp = time
+
+			if err := db.Create(&m).Error; err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
 func expireOrders(db *gorm.DB) {
 	checkEvery := viper.GetInt64("expireCheckEvery")
 
@@ -172,42 +195,76 @@ func doCmd(cmd *cobra.Command, args []string) {
 			fmt.Printf("%v\n", err)
 			return
 		}
+
+		gpmodel := lib.ModelGoldprices{}
+		err = db.Set("gorm:table_options", "ENGINE=InnoDB").AutoMigrate(&gpmodel).Error
+		if err != nil {
+			fmt.Printf("%v\n", err)
+			return
+		}
 	} else {
 		model := lib.NewModelMarketOrder()
 		if err := db.AutoMigrate(&model).Error; err != nil {
 			fmt.Printf("%v\n", err)
 			return
 		}
+
+		gpmodel := lib.ModelGoldprices{}
+		err = db.AutoMigrate(&gpmodel).Error
+		if err != nil {
+			fmt.Printf("%v\n", err)
+			return
+		}
+	}
+
+	// Expiration
+	if viper.GetInt64("expireCheckEvery") > 0 {
+		go expireOrders(db)
 	}
 
 	nc, _ := nats.Connect(viper.GetString("natsURL"))
 	defer nc.Close()
 
 	marketCh := make(chan *nats.Msg, 64)
-	marketSub, err := nc.ChanSubscribe(adclib.NatsMarketOrdersDeduped, marketCh)
+	marketSub, err := nc.ChanSubscribe("*.deduped", marketCh)
 	if err != nil {
 		fmt.Printf("%v\n", err)
 		return
 	}
 	defer marketSub.Unsubscribe()
 
-	if viper.GetInt64("expireCheckEvery") > 0 {
-		go expireOrders(db)
-	}
-
 	for {
 		select {
 		case msg := <-marketCh:
-			order := &adclib.MarketOrder{}
-			err := json.Unmarshal(msg.Data, order)
-			if err != nil {
-				fmt.Printf("ERROR: %v\n", err)
-				continue
-			}
+			switch msg.Subject {
+			case adclib.NatsMarketOrdersDeduped:
+				order := &adclib.MarketOrder{}
+				err := json.Unmarshal(msg.Data, order)
+				if err != nil {
+					fmt.Printf("ERROR: %v\n", err)
+					continue
+				}
 
-			err = updateOrCreateOrder(db, order)
-			if err != nil {
-				fmt.Printf("ERROR: %s\n", err)
+				err = updateOrCreateOrder(db, order)
+				if err != nil {
+					fmt.Printf("ERROR: %s\n", err)
+				}
+
+			case adclib.NatsGoldPricesDeduped:
+				gprices := &adclib.GoldPricesUpload{}
+				err := json.Unmarshal(msg.Data, gprices)
+				if err != nil {
+					fmt.Printf("ERROR: %v\n", err)
+					continue
+				}
+
+				err = createGoldPrices(db, gprices)
+				if err != nil {
+					fmt.Printf("ERROR: %s\n", err)
+				}
+
+			default:
+				continue
 			}
 		}
 	}

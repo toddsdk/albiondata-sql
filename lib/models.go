@@ -41,3 +41,13 @@ type ModelMarketStats struct {
 func (m ModelMarketStats) TableName() string {
 	return "market_stats"
 }
+
+type ModelGoldprices struct {
+	gorm.Model
+	Timestamp time.Time `gorm:"index"`
+	Price     int
+}
+
+func (m ModelGoldprices) TableName() string {
+	return "gold_prices"
+}
